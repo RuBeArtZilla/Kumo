@@ -1,10 +1,19 @@
 #pragma once
-
+using namespace std;
 struct WorkerData
 {
 	sockaddr_in addr;
 	SOCKET sock;
 };
+
+struct MessageParameter 
+{
+	char * name;
+	char * data; 
+};
+
+typedef list<wstring> LISTSTR;
+typedef list<MessageParameter> LISTMSGPRM;
 
 void CreateNewWorker(void * pParams);
 
