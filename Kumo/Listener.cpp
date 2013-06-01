@@ -1,5 +1,8 @@
 ﻿#include "StdAfx.h"
 #include "Listener.h"
+#include "Worker.h"
+
+
 Listener::Listener(void)
 {
 	inSocket = INVALID_SOCKET;
@@ -81,11 +84,9 @@ void start_listen(void*  pParams)
 
 	while (true)
 	{
-		sockaddr_in client_addr;
-		SOCKET client_sock;
-		int size_client_addr = sizeof(client_addr);
-		client_sock = accept(pListener->inSocket, (sockaddr*)&client_addr, &size_client_addr);
-		//TODO: Create new worker class in new thread;
-		send(client_sock, "HELLO★ПРИВЕТ",sizeof("HELLO★ПРИВЕТ"),0);//TEMP:just for test
+		WorkerData WD;
+		int size_client_addr = sizeof(WD.addr);
+		WD.sock = accept(pListener->inSocket, (sockaddr*)&WD.addr, &size_client_addr);
+		HANDLE hThread = (HANDLE)_beginthread( CreateNewWorker, 0, (void*) &WD ); //TODO: use this hadle later
 	}
 }
