@@ -1,6 +1,5 @@
-#include "StdAfx.h"
+﻿#include "StdAfx.h"
 #include "Listener.h"
-
 Listener::Listener(void)
 {
 	inSocket = INVALID_SOCKET;
@@ -9,7 +8,7 @@ Listener::Listener(void)
 
 Listener::~Listener(void)
 {
-	WSACleanup();// here ?
+	WSACleanup();// here ? TODO: TEST IT
 }
 
 int Listener::start(void)
@@ -19,7 +18,7 @@ int Listener::start(void)
 	{
 		return intLastError;
 	}
-	
+
 	inSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (inSocket == INVALID_SOCKET)
 	{
@@ -30,14 +29,30 @@ int Listener::start(void)
 	server_addr.sin_port = htons(port);
 	server_addr.sin_addr.S_un.S_addr = 0;
 
-	intLastError = bind(inSocket, (sockaddr*)&server_addr, sizeof(server_addr));
-	
+	intLastError = bind(inSocket, (sockaddr*) & server_addr, sizeof (server_addr));
+
+	if (intLastError == SOCKET_ERROR)
+	{
+		intLastError = WSAGetLastError();
+		closesocket(inSocket);
+		WSACleanup(); // use here? TODO: TEST IT
+		return intLastError;
+	}
+
+	if (listen(inSocket, SOMAXCONN) == SOCKET_ERROR)
+		return WSAGetLastError();
+
+	hThread = (HANDLE)_beginthread( start_listen, 0, (void*) this );
+
 	return 0;
 }
 
 
 int Listener::stop(void)
 {
+	TerminateThread(hThread, 0);//not dangerous, because thread just accepting incoming connections
+	closesocket(inSocket);
+	WSACleanup();// ???
 	return 0;
 }
 
@@ -57,4 +72,20 @@ int Listener::setPort(WORD new_port)
 WORD Listener::getPort(void)
 {
 	return port;
+}
+
+
+void start_listen(void*  pParams)
+{
+	Listener *pListener = (Listener*)pParams;
+
+	while (true)
+	{
+		sockaddr_in client_addr;
+		SOCKET client_sock;
+		int size_client_addr = sizeof(client_addr);
+		client_sock = accept(pListener->inSocket, (sockaddr*)&client_addr, &size_client_addr);
+		//TODO: Create new worker class in new thread;
+		send(client_sock, "HELLO★ПРИВЕТ",sizeof("HELLO★ПРИВЕТ"),0);//TEMP:just for test
+	}
 }
