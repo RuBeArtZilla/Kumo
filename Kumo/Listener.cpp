@@ -16,8 +16,8 @@ Listener::~Listener(void)
 
 int Listener::start(void)
 {
-	int intLastError = 0;
-	if (intLastError = WSAStartup(WINSOCK_VERSION_REQUEST, &wsaData))
+	int intLastError = WSAStartup(WINSOCK_VERSION_REQUEST, &wsaData);
+	if (intLastError)
 	{
 		return intLastError;
 	}
@@ -82,11 +82,11 @@ void start_listen(void*  pParams)
 {
 	Listener *pListener = (Listener*)pParams;
 
-	while (true)
+	for(;;)
 	{
 		WorkerData WD;
 		int size_client_addr = sizeof(WD.addr);
 		WD.sock = accept(pListener->inSocket, (sockaddr*)&WD.addr, &size_client_addr);
-		HANDLE hThread = (HANDLE)_beginthread( CreateNewWorker, 0, (void*) &WD ); //TODO: use this hadle later
+		/*HANDLE hNewThread = (HANDLE)*/_beginthread( CreateNewWorker, 0, (void*) &WD ); //TODO: use this hadle later
 	}
 }

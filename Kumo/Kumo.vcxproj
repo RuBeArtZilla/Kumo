@@ -54,7 +54,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -80,6 +80,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Kumo.h" />
+    <ClInclude Include="kumo_db.h" />
     <ClInclude Include="Listener.h" />
     <ClInclude Include="Protection.h" />
     <ClInclude Include="Resource.h" />
@@ -89,6 +90,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Kumo.cpp" />
+    <ClCompile Include="kumo_db.cpp" />
     <ClCompile Include="Listener.cpp" />
     <ClCompile Include="Protection.cpp" />
     <ClCompile Include="stdafx.cpp">

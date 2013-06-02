@@ -20,6 +20,7 @@
 
 // TODO: reference additional headers your program requires here
 #include <WinSock2.h>
+#include <Wincrypt.h>
 #include <process.h>
 #include <list>
 #include <string>
