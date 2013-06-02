@@ -14,68 +14,38 @@ Protection::~Protection(void)
 
 std::wstring Protection::getHash(void * pData, int size)
 {
-	HCRYPTPROV hProv;
-	HCRYPTHASH hHash;
-
-	// Инициализация контекста криптопровайдера
-	if(!CryptAcquireContext(&hProv, 
-		"{EB57ED8A-CCCC-4bf5-8659-9DF2F05F24AD}", NULL, PROV_RSA_FULL, 0))
-	{
-		Error("CryptAcquireContext");
-		return;
-	}
-
-	std::cout << "Cryptographic provider initialized" << std::endl;
-
-	// Cоздание хеш-объекта
-	if(!CryptCreateHash(hProv, CALG_MD5, 0, 0, &hHash))
-	{
-		Error("CryptCreateHash");
-		return;
-	}
-
-	std::cout << "Hash created" << std::endl;
-
-	// Тестовые данные для хеширования
-	char string[] = "Test";
-	DWORD count = strlen(string);
-
-	// Передача хешируемых данных хэш-объекту.
-	if(!CryptHashData(hHash, (BYTE*)string, count, 0))
-	{
-		Error("CryptHashData");
-		return;
-	}
-
-	std::cout << "Hash data loaded" << std::endl;
-
-	// Получение хеш-значения
-	count = 0;
-
-	if(!CryptGetHashParam(hHash, HP_HASHVAL, NULL, &count, 0))
-	{
-		Error("CryptGetHashParam");
-		return;
-	}
+	HCRYPTPROV hCryptProv;
+    HCRYPTHASH hHash;
+	DWORD count = 0;
+	std::wstring result = L"";
+    if(!CryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))	result;
+	if(!CryptCreateHash(hCryptProv, CALG_SHA, 0, 0, &hHash))	result;
+	if(!CryptHashData(hHash, (BYTE*)pData, size, 0))	result;
+	if(!CryptGetHashParam(hHash, HP_HASHVAL, NULL, &count, 0))	result;
 
 	char* hash_value = static_cast<char*>(malloc(count + 1));
 	ZeroMemory(hash_value, count + 1);
 
-	if(!CryptGetHashParam(hHash, HP_HASHVAL, (BYTE*)hash_value, &count, 0))
+	if(!CryptGetHashParam(hHash, HP_HASHVAL, (BYTE*)hash_value, &count, 0))	result;
+
+	for(int i = count - 1; i >= 0; i--){if (hash_value[i]==0) hash_value[i] = 255;}
+
+	std::string val(hash_value);
+	std::wstring wstr( val.begin(), val.end() );
+
+	int index = 0;
+	for(;;)
 	{
-		Error("CryptGetHashParam");
-		return;
+		index = wstr.find(L"\n");
+		if (index == std::wstring::npos) break;
+		wstr.erase(index, 1);
+	}
+	for(;;)
+	{
+		index = wstr.find(L"\r");
+		if (index == std::wstring::npos) break;
+		wstr.erase(index, 1);
 	}
 
-	std::cout << "Hash value is received" << std::endl;
-
-	// Вывод на экран полученного хеш-значения
-	std::cout << "Hash value: " << hash_value << std::endl;
-
-
-
-
-
-
-	return std::wstring();
+	return wstr;
 }

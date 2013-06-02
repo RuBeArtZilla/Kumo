@@ -1,7 +1,7 @@
 ﻿#include "StdAfx.h"
 #include "Listener.h"
 #include "Worker.h"
-
+#include "kumo_db.h"
 
 Listener::Listener(void)
 {
@@ -81,7 +81,11 @@ WORD Listener::getPort(void)
 void start_listen(void*  pParams)
 {
 	Listener *pListener = (Listener*)pParams;
-
+	//kumo_db::addUser(L"user",L"0000");
+	//kumo_db::addUser(L"admin",L"12345678");
+	//kumo_db::addUser(L"root",L"0002");
+	//wstring tmp = Protection::getHash(L"12345678", sizeof WCHAR * 8);
+	//wstring result = kumo_db::getUserPassHash(L"admin");
 	for(;;)
 	{
 		WorkerData WD;

@@ -22,5 +22,9 @@
 #include <WinSock2.h>
 #include <Wincrypt.h>
 #include <process.h>
+#include <codecvt>
+#include <fstream>
+#include <cstdlib>
 #include <list>
+#include <locale>
 #include <string>

@@ -21,7 +21,6 @@ void CreateNewWorker(void * pParams)
 
 	for(;;)
 	{
-
 		char buf[DEFAULT_BUFFER_SIZE] = {0};//TODO: check buffer size
 		int msize = recv(W.getClientSocket(), buf, sizeof(buf)-1, 0);//buf[msize]='\0';
 
