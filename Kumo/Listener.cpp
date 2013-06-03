@@ -84,6 +84,9 @@ void start_listen(void*  pParams)
 	//kumo_db::addUser(L"user",L"0000");
 	//kumo_db::addUser(L"admin",L"12345678");
 	//kumo_db::addUser(L"root",L"0002");
+
+	std::vector<std::wstring> filenames = kumo_db::getDir(L"F:/");
+
 	//wstring tmp = Protection::getHash(L"12345678", sizeof WCHAR * 8);
 	//wstring result = kumo_db::getUserPassHash(L"admin");
 	for(;;)

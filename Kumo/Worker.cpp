@@ -1,10 +1,10 @@
 ﻿#include "StdAfx.h"
 #include "Worker.h"
-//#include "Protection.h"
-
 
 Worker::Worker(void)
 {
+	session = rand();
+	user = MESSAGE_PARAMETER_NOT_FOUND;
 }
 
 
@@ -23,6 +23,8 @@ void CreateNewWorker(void * pParams)
 	{
 		char buf[DEFAULT_BUFFER_SIZE] = {0};//TODO: check buffer size
 		int msize = recv(W.getClientSocket(), buf, sizeof(buf)-1, 0);//buf[msize]='\0';
+		
+		send(W.getClientSocket(), (char *)L"ТЫ ДНО", sizeof WCHAR * 6, 0);
 
 		buf[0] = buf[2];
 		buf[1] = buf[3];
@@ -91,8 +93,7 @@ LISTWSMSGPRM ParseInputMessage(wstring msg)
 		tmsg.erase(0, index + 1);
 
 		index = tmsg.find(MESSAGE_PARSE_SEPARATOR, 0);
-		if (index == std::wstring::npos)	return result;
-		tmsg.erase(0, index + 1);
+		if (index != std::wstring::npos)	tmsg.erase(0, index + 1);
 
 		result.push_back(wsMsgPrm);
 	}
@@ -107,7 +108,7 @@ wstring wsFindParameter(LISTWSMSGPRM * source, wstring find)
 			return iterator->data;
 		iterator++;
 	}
-	return L"";
+	return MESSAGE_PARAMETER_NOT_FOUND;
 }
 
 int CheckMessage(LISTWSMSGPRM * input)
@@ -142,8 +143,17 @@ int Worker::Authorisation(LISTWSMSGPRM *msg)
 {
 	wstring login = wsFindParameter(msg, MESSAGE_AUTHORISATION_LOGIN);
 	wstring password = wsFindParameter(msg, MESSAGE_AUTHORISATION_PASSWORD);
+	if ((login != MESSAGE_PARAMETER_NOT_FOUND)&&(password != MESSAGE_PARAMETER_NOT_FOUND)) 
+	{
+		wstring inputPasswordHash = Protection::getHash((void *)password.c_str(), sizeof WCHAR * password.length());
+		wstring dbPasswordHash = kumo_db::getUserPassHash(login);
 
-	//TODO: Authorisation
+		if (!dbPasswordHash.compare(inputPasswordHash))
+		{
+			user = login;
+		}
+		else SendErrorMessage(MESSAGE_ERROR_CODE_BAD_AUTHORISATION);
+	}
 	return 0;
 }
 
@@ -155,7 +165,62 @@ int Worker::DeviceInfo(LISTWSMSGPRM *msg)
 
 int Worker::DirectoryRequest(LISTWSMSGPRM *msg)
 {
-	//TODO: DirectoryRequest
+	wstring dir = wsFindParameter(msg, MESSAGE_DIRECTORY_REQUEST_PATH);
+
+	if (dir != MESSAGE_PARAMETER_NOT_FOUND)
+	{
+		WSVECTOR filenames = kumo_db::getDir(dir);
+
+		std::wstring wsMessage;
+
+
+		wsMessage += MESSAGE_PARSE_START + 
+			std::wstring(MESSAGE_THEME) + 
+			std::wstring(PARAMETR_PARSE_SEPARATOR) +  
+			std::wstring(PARAMETR_PARSE_BORDER) +
+			std::wstring(MESSAGE_DIRECTORY_REQUEST) + 
+			std::wstring(PARAMETR_PARSE_BORDER) +
+
+			std::wstring(MESSAGE_PARSE_SEPARATOR) +
+			std::wstring(MESSAGE_TIME) +
+			std::wstring(PARAMETR_PARSE_SEPARATOR) +  
+			std::wstring(PARAMETR_PARSE_BORDER) +
+			std::to_wstring((_Longlong)session) + //TODO: change to current time
+			std::wstring(PARAMETR_PARSE_BORDER) +
+
+			std::wstring(MESSAGE_PARSE_SEPARATOR) +
+			std::wstring(MESSAGE_SESSION) +
+			std::wstring(PARAMETR_PARSE_SEPARATOR) +  
+			std::wstring(PARAMETR_PARSE_BORDER) +
+			std::to_wstring((_Longlong)session) +
+			std::wstring(PARAMETR_PARSE_BORDER) +
+
+			std::wstring(MESSAGE_PARSE_SEPARATOR) +
+			std::wstring(MESSAGE_DIRECTORY_REQUEST_PATH) +
+			std::wstring(PARAMETR_PARSE_SEPARATOR) +  
+			std::wstring(PARAMETR_PARSE_BORDER) +
+			dir +
+			std::wstring(PARAMETR_PARSE_BORDER) +
+			
+			std::wstring(MESSAGE_PARSE_SEPARATOR) +
+			std::wstring(MESSAGE_DIRECTORY_REQUEST_LIST) +
+			std::wstring(PARAMETR_PARSE_SEPARATOR) +  
+			std::wstring(PARAMETR_PARSE_BORDER);
+
+		WSVECTOR_ITERATOR iterator = filenames.begin();
+		while(iterator != filenames.end())
+		{
+			wsMessage += iterator->c_str();
+			iterator++;
+			if ((iterator != filenames.end())) 
+				wsMessage += MESSAGE_DIRECTORY_REQUEST_LIST_SEPARATOR;
+		}
+		wsMessage += PARAMETR_PARSE_BORDER;
+
+		send(client, (char *)&wsMessage, sizeof WCHAR * wsMessage.length(), 0);
+
+	}
+
 	return 0;
 }
 
@@ -168,4 +233,10 @@ int Worker::FileRequest(LISTWSMSGPRM *msg)
 void Worker::SendErrorMessage(wstring msg)
 {
 	send(client, (char *) msg.c_str(), msg.length() * sizeof (wchar_t), 0);
+}
+
+
+int Worker::SendDirectory(std::wstring path, WSVECTOR data)
+{
+	return 0;
 }

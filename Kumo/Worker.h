@@ -1,4 +1,5 @@
 #include "Protection.h"
+#include "kumo_db.h"
 
 #pragma once
 using namespace std;
@@ -21,10 +22,12 @@ struct wsMessageParameter
 };
 
 typedef list<wstring> LISTSTR;
-
 typedef list<MessageParameter> LISTMSGPRM;
 typedef list<wsMessageParameter> LISTWSMSGPRM;
 typedef list<wsMessageParameter>::iterator LISTWSMSGPRM_ITERATOR;
+
+typedef std::vector<std::wstring> WSVECTOR;
+typedef std::vector<std::wstring>::iterator WSVECTOR_ITERATOR;
 
 #define DEFAULT_BUFFER_SIZE 4096
 
@@ -33,14 +36,31 @@ typedef list<wsMessageParameter>::iterator LISTWSMSGPRM_ITERATOR;
 #define PARAMETR_PARSE_SEPARATOR L"="
 #define PARAMETR_PARSE_BORDER L"\""
 
+#define MESSAGE_PARAMETER_NOT_FOUND L""
+
 #define MESSAGE_THEME L"msg"
+#define MESSAGE_SESSION L"session"
+#define MESSAGE_TIME L"time"
+#define MESSAGE_ERROR L"error"
+
+#define MESSAGE_ERROR_CODE L"code"
+#define MESSAGE_ERROR_CODE_BAD_AUTHORISATION L"303"
+
 #define MESSAGE_AUTHORISATION L"auth"
 #define MESSAGE_AUTHORISATION_LOGIN L"login"
 #define MESSAGE_AUTHORISATION_PASSWORD L"pass"
 
 #define MESSAGE_DEVICE_INFO L"info"
+
+
 #define MESSAGE_DIRECTORY_REQUEST L"dir"
+#define MESSAGE_DIRECTORY_REQUEST_PATH L"path"
+#define MESSAGE_DIRECTORY_REQUEST_LIST L"data"
+#define MESSAGE_DIRECTORY_REQUEST_LIST_SEPARATOR L", "
+
 #define MESSAGE_FILE_REQUEST L"file"
+#define MESSAGE_FILE_REQUEST_PATH L"path"
+#define MESSAGE_FILE_REQUEST_NAME L"name"
 
 #define MESSAGE_AUTHORISATION_ID 1
 #define MESSAGE_DEVICE_INFO_ID 2
@@ -62,6 +82,8 @@ protected:
 	Protection P;
 	SOCKET client;
 	sockaddr_in addr;
+	unsigned int session;
+	wstring user;
 public:
 	int init(WorkerData *wd);
 	SOCKET getClientSocket(void);
@@ -70,5 +92,6 @@ public:
 	int DirectoryRequest(LISTWSMSGPRM *msg);
 	int FileRequest(LISTWSMSGPRM *msg);
 	void SendErrorMessage(wstring msg);
+	int SendDirectory(std::wstring path, WSVECTOR data);
 };
 

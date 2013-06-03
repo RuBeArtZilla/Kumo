@@ -28,3 +28,4 @@
 #include <list>
 #include <locale>
 #include <string>
+#include <vector>
