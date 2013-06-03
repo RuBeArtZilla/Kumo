@@ -45,6 +45,7 @@ typedef std::vector<std::wstring>::iterator WSVECTOR_ITERATOR;
 
 #define MESSAGE_ERROR_CODE L"code"
 #define MESSAGE_ERROR_CODE_BAD_AUTHORISATION L"303"
+#define MESSAGE_ERROR_CODE_BAD_MESSAGE L"304"
 
 #define MESSAGE_AUTHORISATION L"auth"
 #define MESSAGE_AUTHORISATION_LOGIN L"login"
@@ -91,7 +92,9 @@ public:
 	int DeviceInfo(LISTWSMSGPRM *msg);
 	int DirectoryRequest(LISTWSMSGPRM *msg);
 	int FileRequest(LISTWSMSGPRM *msg);
-	void SendErrorMessage(wstring msg);
+	int SendErrorMessage(wstring msg);
 	int SendDirectory(std::wstring path, WSVECTOR data);
+	int SendMessage(LISTWSMSGPRM * msg);
+	wsMessageParameter createParam(wstring name, wstring data);
 };
 

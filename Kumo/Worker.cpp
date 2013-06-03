@@ -1,6 +1,7 @@
 ﻿#include "StdAfx.h"
 #include "Worker.h"
 
+
 Worker::Worker(void)
 {
 	session = rand();
@@ -15,16 +16,19 @@ Worker::~Worker(void)
 void CreateNewWorker(void * pParams)
 {
 	Worker W;
+	setlocale(LC_CTYPE,"C-UTF-8");
 	W.init((WorkerData*)pParams);
 	LISTMSGPRM MsgPrmList;
 	string input;
 
 	for(;;)
 	{
-		char buf[DEFAULT_BUFFER_SIZE] = {0};//TODO: check buffer size
+		char buf[DEFAULT_BUFFER_SIZE] = {0};// TODO: check buffer size
 		int msize = recv(W.getClientSocket(), buf, sizeof(buf)-1, 0);//buf[msize]='\0';
-		
-		send(W.getClientSocket(), (char *)L"ТЫ ДНО", sizeof WCHAR * 6, 0);
+		if (msize < 0) return;
+
+		char size[2] = {buf[0], buf[1]}; // TODO: use this size of message!
+
 
 		buf[0] = buf[2];
 		buf[1] = buf[3];
@@ -33,8 +37,6 @@ void CreateNewWorker(void * pParams)
 
 		//TODO: Reapair this ↓
 		//WARNING: if "original" message lenght from client larger DEFAULT_BUFFER_SIZE then message's will be broken
-
-		if (msize < 0) return;
 
 		//TODO: after recv need use p.encode();
 		
@@ -46,21 +48,27 @@ void CreateNewWorker(void * pParams)
 
 		LISTWSMSGPRM lwmp = ParseInputMessage(wsInput);
 
-		//TODO: answer to message
-
 		int iMsg = CheckMessage(&lwmp);
 
 		switch (iMsg)
 		{
 		case MESSAGE_AUTHORISATION_ID:
 			W.Authorisation(&lwmp);
+			break;
 		case MESSAGE_DEVICE_INFO_ID:
 			W.DeviceInfo(&lwmp);
+			break;
 		case MESSAGE_DIRECTORY_REQUEST_ID:
 			W.DirectoryRequest(&lwmp);
+			break;
 		case MESSAGE_FILE_REQUEST_ID:
 			W.FileRequest(&lwmp);
-		default: continue;
+			break;
+		default: 
+			{
+				W.SendErrorMessage(MESSAGE_ERROR_CODE_BAD_MESSAGE);
+				break;;
+			}
 		}
 	}
 }
@@ -151,6 +159,13 @@ int Worker::Authorisation(LISTWSMSGPRM *msg)
 		if (!dbPasswordHash.compare(inputPasswordHash))
 		{
 			user = login;
+			LISTWSMSGPRM newMessage;
+
+			newMessage.push_back(createParam(MESSAGE_THEME, MESSAGE_AUTHORISATION));
+			newMessage.push_back(createParam(MESSAGE_TIME, std::to_wstring((_Longlong)session)));
+			newMessage.push_back(createParam(MESSAGE_SESSION, std::to_wstring((_Longlong)session)));
+
+			return SendMessage(&newMessage);
 		}
 		else SendErrorMessage(MESSAGE_ERROR_CODE_BAD_AUTHORISATION);
 	}
@@ -170,58 +185,10 @@ int Worker::DirectoryRequest(LISTWSMSGPRM *msg)
 	if (dir != MESSAGE_PARAMETER_NOT_FOUND)
 	{
 		WSVECTOR filenames = kumo_db::getDir(dir);
-
-		std::wstring wsMessage;
-
-
-		wsMessage += MESSAGE_PARSE_START + 
-			std::wstring(MESSAGE_THEME) + 
-			std::wstring(PARAMETR_PARSE_SEPARATOR) +  
-			std::wstring(PARAMETR_PARSE_BORDER) +
-			std::wstring(MESSAGE_DIRECTORY_REQUEST) + 
-			std::wstring(PARAMETR_PARSE_BORDER) +
-
-			std::wstring(MESSAGE_PARSE_SEPARATOR) +
-			std::wstring(MESSAGE_TIME) +
-			std::wstring(PARAMETR_PARSE_SEPARATOR) +  
-			std::wstring(PARAMETR_PARSE_BORDER) +
-			std::to_wstring((_Longlong)session) + //TODO: change to current time
-			std::wstring(PARAMETR_PARSE_BORDER) +
-
-			std::wstring(MESSAGE_PARSE_SEPARATOR) +
-			std::wstring(MESSAGE_SESSION) +
-			std::wstring(PARAMETR_PARSE_SEPARATOR) +  
-			std::wstring(PARAMETR_PARSE_BORDER) +
-			std::to_wstring((_Longlong)session) +
-			std::wstring(PARAMETR_PARSE_BORDER) +
-
-			std::wstring(MESSAGE_PARSE_SEPARATOR) +
-			std::wstring(MESSAGE_DIRECTORY_REQUEST_PATH) +
-			std::wstring(PARAMETR_PARSE_SEPARATOR) +  
-			std::wstring(PARAMETR_PARSE_BORDER) +
-			dir +
-			std::wstring(PARAMETR_PARSE_BORDER) +
-			
-			std::wstring(MESSAGE_PARSE_SEPARATOR) +
-			std::wstring(MESSAGE_DIRECTORY_REQUEST_LIST) +
-			std::wstring(PARAMETR_PARSE_SEPARATOR) +  
-			std::wstring(PARAMETR_PARSE_BORDER);
-
-		WSVECTOR_ITERATOR iterator = filenames.begin();
-		while(iterator != filenames.end())
-		{
-			wsMessage += iterator->c_str();
-			iterator++;
-			if ((iterator != filenames.end())) 
-				wsMessage += MESSAGE_DIRECTORY_REQUEST_LIST_SEPARATOR;
-		}
-		wsMessage += PARAMETR_PARSE_BORDER;
-
-		send(client, (char *)&wsMessage, sizeof WCHAR * wsMessage.length(), 0);
-
+		return SendDirectory(dir, filenames);
 	}
 
-	return 0;
+	return -1;
 }
 
 int Worker::FileRequest(LISTWSMSGPRM *msg)
@@ -230,13 +197,80 @@ int Worker::FileRequest(LISTWSMSGPRM *msg)
 	return 0;
 }
 
-void Worker::SendErrorMessage(wstring msg)
+int Worker::SendErrorMessage(wstring msg)
 {
-	send(client, (char *) msg.c_str(), msg.length() * sizeof (wchar_t), 0);
+	LISTWSMSGPRM newMessage;
+	newMessage.push_back(createParam(MESSAGE_THEME, MESSAGE_ERROR));
+	newMessage.push_back(createParam(MESSAGE_TIME, std::to_wstring((_Longlong)session)));
+	if (user != MESSAGE_PARAMETER_NOT_FOUND) 
+		newMessage.push_back(createParam(MESSAGE_SESSION, std::to_wstring((_Longlong)session)));
+	newMessage.push_back(createParam(MESSAGE_ERROR_CODE, msg));
+	return SendMessage(&newMessage);
 }
 
 
 int Worker::SendDirectory(std::wstring path, WSVECTOR data)
 {
+	std::wstring wsData;
+	WSVECTOR_ITERATOR iterator = data.begin();
+
+	while(iterator != data.end())
+	{
+		wsData += iterator->c_str();
+		iterator++;
+		if ((iterator != data.end())) 
+			wsData += MESSAGE_DIRECTORY_REQUEST_LIST_SEPARATOR;
+	}
+
+	LISTWSMSGPRM newMessage;
+
+	newMessage.push_back(createParam(MESSAGE_THEME, MESSAGE_DIRECTORY_REQUEST));
+	newMessage.push_back(createParam(MESSAGE_TIME, std::to_wstring((_Longlong)session)));
+	newMessage.push_back(createParam(MESSAGE_SESSION, std::to_wstring((_Longlong)session)));
+	newMessage.push_back(createParam(MESSAGE_DIRECTORY_REQUEST_PATH, path));
+	newMessage.push_back(createParam(MESSAGE_DIRECTORY_REQUEST_LIST, wsData));
+
+	return SendMessage(&newMessage);
+}
+
+
+int Worker::SendMessage(LISTWSMSGPRM * msg)
+{
+	LISTWSMSGPRM_ITERATOR iterator = msg->begin();
+	std::wstring wsMessage = MESSAGE_PARSE_START;
+
+	while(iterator != msg->end())
+	{
+		wsMessage += std::wstring(iterator->name) + 
+			std::wstring(PARAMETR_PARSE_SEPARATOR) +  
+			std::wstring(PARAMETR_PARSE_BORDER) +
+			std::wstring(iterator->data) + 
+			std::wstring(PARAMETR_PARSE_BORDER);
+		iterator++;
+	}
+
+	short size = (wsMessage.length() * sizeof WCHAR);
+	short size2 = wsMessage.length();
+	char* bMessage = static_cast<char*>(malloc(size + 2));
+
+	if (bMessage != NULL)
+	{
+		ZeroMemory(bMessage, size + 2);
+		char * pData = &bMessage[2];
+		memcpy(pData, wsMessage.c_str(), size);
+		bMessage[0] = ((char*)&size2)[1]; 
+		bMessage[1] = ((char*)&size2)[0];
+		send(client, bMessage, size + 2, 0);
+		//shutdown(client, 0);
+		free(bMessage);
+	}
+
 	return 0;
+}
+
+
+wsMessageParameter Worker::createParam(wstring name, wstring data)
+{
+	wsMessageParameter tmp = {name, data};
+	return tmp;
 }

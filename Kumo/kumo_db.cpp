@@ -64,7 +64,6 @@ int kumo_db::addUser(std::wstring user, std::wstring password)
 	std::wstring wsPasswordHash = Protection::getHash((void *)password.c_str(), sizeof WCHAR * password.length());
 	wchar_t buffer[128];
 
-
 	std::wfstream file(USER_LIST_FILE,  std::ios::out | std::ios::in |std::ios::binary /*| std::ios::trunc*/);
 	if (!file.is_open())
 		file.open (USER_LIST_FILE,  std::ios::out | std::ios::binary);
