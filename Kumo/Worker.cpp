@@ -25,10 +25,9 @@ void CreateNewWorker(void * pParams)
 	{
 		char buf[DEFAULT_BUFFER_SIZE] = {0};// TODO: check buffer size
 		int msize = recv(W.getClientSocket(), buf, sizeof(buf)-1, 0);//buf[msize]='\0';
-		if (msize < 0) return;
+		if (msize <= 0) return;
 
 		char size[2] = {buf[0], buf[1]}; // TODO: use this size of message!
-
 
 		buf[0] = buf[2];
 		buf[1] = buf[3];
@@ -36,7 +35,8 @@ void CreateNewWorker(void * pParams)
 		input += buf;
 
 		//TODO: Reapair this ↓
-		//WARNING: if "original" message lenght from client larger DEFAULT_BUFFER_SIZE then message's will be broken
+		//WARNING: if "original" message lenght from client larger 
+		//DEFAULT_BUFFER_SIZE then message's will be broken
 
 		//TODO: after recv need use p.encode();
 		
@@ -53,16 +53,16 @@ void CreateNewWorker(void * pParams)
 		switch (iMsg)
 		{
 		case MESSAGE_AUTHORISATION_ID:
-			W.Authorisation(&lwmp);
+			W.Authorisation(&lwmp);return;
 			break;
 		case MESSAGE_DEVICE_INFO_ID:
-			W.DeviceInfo(&lwmp);
+			W.DeviceInfo(&lwmp);return;
 			break;
 		case MESSAGE_DIRECTORY_REQUEST_ID:
-			W.DirectoryRequest(&lwmp);
+			W.DirectoryRequest(&lwmp);return;
 			break;
 		case MESSAGE_FILE_REQUEST_ID:
-			W.FileRequest(&lwmp);
+			W.FileRequest(&lwmp);return;
 			break;
 		default: 
 			{
@@ -153,7 +153,8 @@ int Worker::Authorisation(LISTWSMSGPRM *msg)
 	wstring password = wsFindParameter(msg, MESSAGE_AUTHORISATION_PASSWORD);
 	if ((login != MESSAGE_PARAMETER_NOT_FOUND)&&(password != MESSAGE_PARAMETER_NOT_FOUND)) 
 	{
-		wstring inputPasswordHash = Protection::getHash((void *)password.c_str(), sizeof WCHAR * password.length());
+		wstring inputPasswordHash = 
+			Protection::getHash((void *)password.c_str(), sizeof WCHAR * password.length());
 		wstring dbPasswordHash = kumo_db::getUserPassHash(login);
 
 		if (!dbPasswordHash.compare(inputPasswordHash))
@@ -247,9 +248,11 @@ int Worker::SendMessage(LISTWSMSGPRM * msg)
 			std::wstring(iterator->data) + 
 			std::wstring(PARAMETR_PARSE_BORDER);
 		iterator++;
+		if (iterator!= msg->end())
+			wsMessage += MESSAGE_PARSE_SEPARATOR;
 	}
-
-	short size = (wsMessage.length() * sizeof WCHAR);
+	
+	short size = wsMessage.length() * (sizeof WCHAR);
 	short size2 = wsMessage.length();
 	char* bMessage = static_cast<char*>(malloc(size + 2));
 
@@ -261,10 +264,10 @@ int Worker::SendMessage(LISTWSMSGPRM * msg)
 		bMessage[0] = ((char*)&size2)[1]; 
 		bMessage[1] = ((char*)&size2)[0];
 		send(client, bMessage, size + 2, 0);
-		//shutdown(client, 0);
 		free(bMessage);
 	}
-
+	closesocket(client);
+	_endthread();
 	return 0;
 }
 

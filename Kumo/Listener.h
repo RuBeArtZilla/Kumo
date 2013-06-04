@@ -2,6 +2,8 @@
 #define WINSOCK_VERSION_REQUEST MAKEWORD(2, 2)
 #define DEFAULT_PORT 33777
 #define MAXIMUM_QUEUE_LENGHT 32
+
+
 class Listener
 {
 public:
