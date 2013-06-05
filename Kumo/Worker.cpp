@@ -232,7 +232,7 @@ int Worker::FileRequest(LISTWSMSGPRM *msg)
 	LISTWSMSGPRM newMessage;
 
 	bfs::path(path + name).extension();
-
+	
 	newMessage.push_back(createParam(MESSAGE_THEME, MESSAGE_FILE_REQUEST));
 	newMessage.push_back(createParam(MESSAGE_TIME, std::to_wstring((_Longlong)kumo_db::getCurrentTime())));
 	newMessage.push_back(createParam(MESSAGE_SESSION, std::to_wstring((_Longlong)session)));
@@ -242,11 +242,26 @@ int Worker::FileRequest(LISTWSMSGPRM *msg)
 	string surl =  std::to_string((_Longlong)session) + std::to_string((_Longlong)kumo_db::getCurrentTime()) + bfs::path(path + name).extension().string();
 	wstring url =  std::to_wstring((_Longlong)session) + std::to_wstring((_Longlong)kumo_db::getCurrentTime()) + bfs::path(path + name).extension().wstring();
 	
-	kumo_db::addFileBind( (path + name), surl);
+	wstring newPath = path + name;
 
 	newMessage.push_back(createParam(MESSAGE_FILE_REQUEST_URL, url));
+	//wstring param = L"-i " + path + name + L" -ab 128 -f " + bfs::path(path + name).extension().wstring() +  L" F:/" + url;
+	wstring param = L"-i " + path + name + L" -ar 44100 -ac 2 -ab 128 F:/" + url;
 
-	
+	STARTUPINFO cif;
+	ZeroMemory(&cif, sizeof(STARTUPINFO));
+	PROCESS_INFORMATION pi;
+	if (CreateProcess(L"C:/ffmpeg/bin/ffmpeg.exe", (LPWSTR)param.c_str(), NULL, NULL, FALSE, NULL, NULL, NULL, &cif, &pi)==TRUE)
+	{
+		DWORD dwResult = WaitForSingleObject(pi.hProcess, 10000);
+		if (dwResult == 0)
+		{
+			newPath = url;
+		}
+	}
+
+	kumo_db::addFileBind( newPath, surl);
+
 	return SendMessage(&newMessage);
 }
 
