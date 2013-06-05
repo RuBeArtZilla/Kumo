@@ -1,16 +1,13 @@
 #include "StdAfx.h"
 #include "Protection.h"
 
-
 Protection::Protection(void)
 {
 }
 
-
 Protection::~Protection(void)
 {
 }
-
 
 std::wstring Protection::getHash(void * pData, int size)
 {

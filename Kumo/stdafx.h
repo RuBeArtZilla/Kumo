@@ -17,7 +17,6 @@
 #include <memory.h>
 #include <tchar.h>
 
-
 // TODO: reference additional headers your program requires here
 #include <WinSock2.h>
 #include <Wincrypt.h>

@@ -7,4 +7,3 @@ public:
 	~Protection(void);
 	static std::wstring getHash(void * pData, int size);
 };
-

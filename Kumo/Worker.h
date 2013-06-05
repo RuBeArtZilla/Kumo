@@ -9,16 +9,16 @@ struct WorkerData
 	SOCKET sock;
 };
 
-struct MessageParameter 
+struct MessageParameter
 {
 	char * name;
-	char * data; 
+	char * data;
 };
 
-struct wsMessageParameter 
+struct wsMessageParameter
 {
 	wstring name;
-	wstring data; 
+	wstring data;
 };
 
 typedef list<wstring> LISTSTR;
@@ -46,6 +46,10 @@ typedef std::vector<std::wstring>::iterator WSVECTOR_ITERATOR;
 #define MESSAGE_ERROR_CODE L"code"
 #define MESSAGE_ERROR_CODE_BAD_AUTHORISATION L"303"
 #define MESSAGE_ERROR_CODE_BAD_MESSAGE L"304"
+#define MESSAGE_ERROR_CODE_BAD_SESSION L"305"
+#define MESSAGE_ERROR_CODE_BAD_PATH L"306"
+#define MESSAGE_ERROR_CODE_BAD_FILE_PATH L"307"
+#define MESSAGE_ERROR_CODE_BAD_FILE_NOT_EXIST L"308"
 
 #define MESSAGE_AUTHORISATION L"auth"
 #define MESSAGE_AUTHORISATION_LOGIN L"login"
@@ -53,8 +57,8 @@ typedef std::vector<std::wstring>::iterator WSVECTOR_ITERATOR;
 
 #define MESSAGE_DEVICE_INFO L"info"
 
-
 #define MESSAGE_DIRECTORY_REQUEST L"dir"
+#define MESSAGE_DIRECTORY_REQUEST_ROOT L"/"
 #define MESSAGE_DIRECTORY_REQUEST_PATH L"path"
 #define MESSAGE_DIRECTORY_REQUEST_LIST L"data"
 #define MESSAGE_DIRECTORY_REQUEST_LIST_SEPARATOR L", "
@@ -62,6 +66,7 @@ typedef std::vector<std::wstring>::iterator WSVECTOR_ITERATOR;
 #define MESSAGE_FILE_REQUEST L"file"
 #define MESSAGE_FILE_REQUEST_PATH L"path"
 #define MESSAGE_FILE_REQUEST_NAME L"name"
+#define MESSAGE_FILE_REQUEST_URL L"url"
 
 #define MESSAGE_AUTHORISATION_ID 1
 #define MESSAGE_DEVICE_INFO_ID 2
@@ -70,7 +75,7 @@ typedef std::vector<std::wstring>::iterator WSVECTOR_ITERATOR;
 
 LISTWSMSGPRM ParseInputMessage(wstring msg);
 int CheckMessage(LISTWSMSGPRM * input);
-wstring wsFindParameter(LISTWSMSGPRM * input);
+std::wstring wsFindParameter(LISTWSMSGPRM * source, std::wstring find);
 
 void CreateNewWorker(void * pParams);
 
@@ -83,9 +88,8 @@ protected:
 	Protection P;
 	SOCKET client;
 	sockaddr_in addr;
-	unsigned int session;
-	wstring user;
 public:
+	long session;
 	int init(WorkerData *wd);
 	SOCKET getClientSocket(void);
 	int Authorisation(LISTWSMSGPRM *msg);
@@ -95,6 +99,9 @@ public:
 	int SendErrorMessage(wstring msg);
 	int SendDirectory(std::wstring path, WSVECTOR data);
 	int SendMessage(LISTWSMSGPRM * msg);
+	bool CheckUserPath(std::wstring path);
 	wsMessageParameter createParam(wstring name, wstring data);
+	int recv_HTTP_GET(char * buf, int size);
+	int recv_HTTP_GET2(char * buf, int size);
+	int send_file(std::wstring filename, long l, long r);
 };
-
