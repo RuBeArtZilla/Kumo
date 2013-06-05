@@ -350,7 +350,8 @@ bool Worker::CheckUserPath(std::wstring path)
 {
 	if (kumo_db::checkSession(session))
 	{
-		WSVECTOR filenames = kumo_db::getUserPath(L"admin");		
+		SESSION_INFO si = kumo_db::getSession(session);
+		WSVECTOR filenames = kumo_db::getUserPath(si.user);		
 		WSVECTOR_ITERATOR iterator = filenames.begin();
 		while(iterator != filenames.end())
 		{
