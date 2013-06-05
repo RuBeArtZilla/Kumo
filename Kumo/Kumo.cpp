@@ -3,10 +3,12 @@
 
 #include "stdafx.h"
 #include "Kumo.h"
+#include "Listener.h"
 
 #define MAX_LOADSTRING 100
 
 // Global Variables:
+Listener clientListener;
 HINSTANCE hInst;								// current instance
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
@@ -54,8 +56,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	return (int) msg.wParam;
 }
-
-
 
 //
 //  FUNCTION: MyRegisterClass()
@@ -108,7 +108,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    hInst = hInstance; // Store instance handle in our global variable
 
    hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
+      CW_USEDEFAULT, 0, 300, 200, NULL, NULL, hInstance, NULL);
+
+   clientListener.start();
 
    if (!hWnd)
    {

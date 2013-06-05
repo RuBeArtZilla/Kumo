@@ -17,5 +17,14 @@
 #include <memory.h>
 #include <tchar.h>
 
-
 // TODO: reference additional headers your program requires here
+#include <WinSock2.h>
+#include <Wincrypt.h>
+#include <process.h>
+#include <codecvt>
+#include <fstream>
+#include <cstdlib>
+#include <list>
+#include <locale>
+#include <string>
+#include <vector>
