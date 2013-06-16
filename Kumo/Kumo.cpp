@@ -12,6 +12,11 @@ Listener clientListener;
 HINSTANCE hInst;								// current instance
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
+TCHAR szButtonEditUser[MAX_LOADSTRING];			
+TCHAR szButtonEditPath[MAX_LOADSTRING];			
+TCHAR szButtonStart[MAX_LOADSTRING];			
+TCHAR szButtonStop[MAX_LOADSTRING];			
+TCHAR szButtonClass[MAX_LOADSTRING] = L"Button";		
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
@@ -34,6 +39,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	// Initialize global strings
 	LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
 	LoadString(hInstance, IDC_KUMO, szWindowClass, MAX_LOADSTRING);
+	LoadString(hInstance, IDS_BTN_EDIT_USER, szButtonEditUser, MAX_LOADSTRING);
+	LoadString(hInstance, IDS_BTN_EDIT_PATH, szButtonEditPath, MAX_LOADSTRING);
+	LoadString(hInstance, IDS_BTN_START, szButtonStart, MAX_LOADSTRING);
+	LoadString(hInstance, IDS_BTN_STOP, szButtonStop, MAX_LOADSTRING);
 	MyRegisterClass(hInstance);
 
 	// Perform application initialization:
@@ -103,12 +112,21 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-   HWND hWnd;
+   HWND hWnd, hWndBtnUser, hWndBtnPath, hWndBtnStart, hWndBtnStop;
 
    hInst = hInstance; // Store instance handle in our global variable
 
    hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, 300, 200, NULL, NULL, hInstance, NULL);
+      CW_USEDEFAULT, 0, 300, 170, NULL, NULL, hInstance, NULL);
+   
+   hWndBtnUser = CreateWindow(szButtonClass, szButtonEditUser, WS_VISIBLE | WS_CHILD, 
+	   10, 30, 120 , 20 , hWnd, (HMENU)IDM_BTN_USER, hInstance, NULL);
+   hWndBtnPath = CreateWindow(szButtonClass, szButtonEditPath, WS_VISIBLE | WS_CHILD, 
+	   10, 60, 120 , 20 , hWnd, (HMENU)IDM_BTN_PATH, hInstance, NULL);
+   hWndBtnStart = CreateWindow(szButtonClass, szButtonStart, WS_CHILD, 
+	   140, 30, 120 , 50 , hWnd, (HMENU)IDM_BTN_START, hInstance, NULL);
+   hWndBtnStop = CreateWindow(szButtonClass, szButtonStop, WS_VISIBLE | WS_CHILD, 
+	   140, 30, 120 , 50 , hWnd, (HMENU)IDM_BTN_STOP, hInstance, NULL);
 
    clientListener.start();
 
@@ -148,6 +166,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		switch (wmId)
 		{
 		case IDM_ABOUT:
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+			break;
+		case IDM_BTN_USER:
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+			break;
+		case IDM_BTN_PATH:
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+			break;
+		case IDM_BTN_START:
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+			break;
+		case IDM_BTN_STOP:
 			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
 			break;
 		case IDM_EXIT:

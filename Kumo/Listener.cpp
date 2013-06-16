@@ -87,11 +87,13 @@ void start_listen(void*  pParams)
 	//kumo_db::delUserPath(L"root", L"E:/AUDIO");
 	//kumo_db::delUser(L"roots");
 	kumo_db::addFileBind(L"E:/AUDIO/Lossless J/Denpa Onna to Seishun Otoko/OP Single — Os-Uchuujin (Touwa Erio (CV. Oogame Asuka))/01 Os-Uchuujin.flac", "my.flac");
+	kumo_db::addFileBind(L"E:/AUDIO/OST/Haiyore! Nyaruko-san/Haiyore! Nyaruko-san/Character Song Mini Album & Original Soundtrack/CD1/08 - Taiyou Iwaku Moeyo Chaos (30min Non-limit ver.).mp3", "long.mp3");
 	kumo_db::addFileBind(L"W:/music.mp3", "my.mp3");
 	kumo_db::addFileBind(L"F:/anime/Bonus/Black Rock Shooter (OP).mp4", "my.mp4");
 	kumo_db::addFileBind(L"D:/VIDEO/CLIPS/Aya Hirano & Nana Mizuki Discotheque MonStAR Sub Espanol.flv", "my.flv");
+	kumo_db::addFileBind(L"D:/VIDEO/CLIPS/Aya Hirano & Nana Mizuki Discotheque MonStAR Sub Espanol.flv", "my.swf");
 	kumo_db::addFileBind(L"D:/Photo/Artem/Sony Ericsson K750i/v1/MOV00021.3gp", "my.3gp");
-	
+	kumo_db::addFileBind(L"F:/test.jpg", "my.jpg");
 	
 	for(;;)
 	{

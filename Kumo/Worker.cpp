@@ -246,7 +246,7 @@ int Worker::FileRequest(LISTWSMSGPRM *msg)
 
 	newMessage.push_back(createParam(MESSAGE_FILE_REQUEST_URL, url));
 	//wstring param = L"-i " + path + name + L" -ab 128 -f " + bfs::path(path + name).extension().wstring() +  L" F:/" + url;
-	wstring param = L"-i " + path + name + L" -ar 44100 -ac 2 -ab 128 F:/" + url;
+	/*wstring param = L"-i " + path + name + L" -ar 44100 -ac 2 -ab 128 F:/" + url;
 
 	STARTUPINFO cif;
 	ZeroMemory(&cif, sizeof(STARTUPINFO));
@@ -259,7 +259,7 @@ int Worker::FileRequest(LISTWSMSGPRM *msg)
 			newPath = url;
 		}
 	}
-
+	*/
 	kumo_db::addFileBind( newPath, surl);
 
 	return SendMessage(&newMessage);
@@ -365,10 +365,21 @@ bool Worker::CheckUserPath(std::wstring path)
 
 int Worker::recv_HTTP_GET(char * buf, int size)
 {
+	//TODO: refactor this long function (it's easy)
 	std::string input = buf;
-
 	int pos0 = input.find(" ", 0);
 	int pos1 = input.find(" ", pos0 + 1);
+
+	int pos2 = input.find("Range: bytes=", 0);
+	int pos3 = input.find("-", pos2);
+	int pos4 = input.find("\r\n", pos3);
+
+	bool partial_content = (pos2 > 1); 
+
+	std::string range_begin = "";
+	std::string range_end = "";
+	LONGLONG ulBegin = 0;
+	LONGLONG ulEnd = 0;
 
 	std::string url = input.substr(pos0 + 2, pos1 - pos0 - 2);
 
@@ -377,6 +388,12 @@ int Worker::recv_HTTP_GET(char * buf, int size)
 	if (wsDBFile != L"")
 	{
 		wsFile = wsDBFile;
+	}
+	else
+	{
+		char error404[] = "HTTP/1.1 404 Not Found\r\nServer: AZ-Mini\r\nKeep-Alive: timeout=5, max=100\r\nConnection: Keep-Alive\r\n\r\nFile not found on Server";
+		send(client, error404, strlen(error404), 0);
+		return 1;
 	}
 
 	HANDLE hFile;
@@ -393,90 +410,60 @@ int Worker::recv_HTTP_GET(char * buf, int size)
 		nFileLen = (dwSizeHigh * (MAXDWORD+1)) + dwSizeLow;
 		CloseHandle(hFile);
 	}
+	else
+	{
+		char error404[] = "HTTP/1.1 404 Not Found\r\nServer: AZ-Mini\r\nKeep-Alive: timeout=5, max=100\r\nConnection: Keep-Alive\r\n\r\nFile not found on Server";
+		send(client, error404, strlen(error404), 0);
+		return 1;
+	}
 
-	char initial[] = "HTTP/1.1 200 OK\r\nServer: AZ-Mini\r\nConnection: close\r\n\r\n";
+	if (partial_content)
+	{
+		range_begin = input.substr(pos2 + 13, pos3 - pos2 - 13);
+		range_end = input.substr(pos3 + 2, pos4 - pos3 - 2);
+		ulEnd = (pos4 - pos3 == 1) ? nFileLen : stoul(range_end, NULL);
+		if (ulEnd > nFileLen) 
+			ulEnd = nFileLen;
+		ulBegin = (pos3 - pos2 == 13) ? nFileLen - ulEnd : stoul(range_begin, NULL);
+		if (ulEnd - ulBegin == nFileLen)
+			partial_content = false;
+	}
+
 	char buffer[1024];
 
-	string sheader = "HTTP/1.1 200 OK\r\nServer: AZ-Mini\r\n";
-	sheader += "Content-Length: ";
-	sheader += std::to_string((_Longlong) nFileLen);
-	sheader += "\r\nAccept-Ranges: bytes\r\nConnection: close\r\n\r\n";
+	string sheader = (partial_content)? HTTP_ANSWER_206 : HTTP_ANSWER_200;
+	sheader += "Server: AZ-Mini\r\n";
+	if (partial_content)
+		sheader += "Content-Range: bytes " + std::to_string(ulBegin) + "-" + std::to_string(ulEnd) + "/" + std::to_string(nFileLen) + "\r\n";
+	if (partial_content) 
+		sheader += "Content-Length: " + std::to_string(ulBegin - ulEnd) + "\r\n";
+	else
+		sheader += "Content-Length: " + std::to_string(nFileLen) + "\r\n";
+	
+	sheader += "Accept-Ranges: bytes\r\nConnection: close\r\n\r\n";
 
 	send(client, sheader.c_str(), sheader.length(), 0);
 	
 	std::ifstream file(wsFile,  std::ios::in |std::ios::binary);
+	if (partial_content)
+	{
+		file.seekg(ulBegin);
+	}
 
-	//std::ifstream file(L"E:/AUDIO/OST/Shingeki no Kyojin/ED Single - Utsukushiki Zankoku na Sekai/01 - Utsukushiki Zankoku na Sekai.mp3",  std::ios::in |std::ios::binary);
-
+	char * alloc_buffer = new char[65536];
 
 	while (file){
-		file.read(buffer, 1024);
-		send(client, buffer, file.gcount(), 0);
+		file.read(alloc_buffer, 65536);
+		send(client, alloc_buffer, file.gcount(), 0);
 	}
+	delete alloc_buffer;
+	closesocket(client);
+	//CloseHandle(hFile);//added, need test
 	return 0;
 }
 
 int Worker::recv_HTTP_GET2(char * buf, int size)
-{/*
-	//struct sockaddr_in sockserv,sockclient;
-	int socketfd,clientfd;
-	//socklen_t clientsocklen;
-	int filefd;
-	int count1,cnt;
-	int totalcnt;
-	char buff[BUFSIZ], buff2[BUFSIZ];
-	char *ptr,strtemp[20];
-	int strcnt;
-
-	//filefd = open("/home/anirudh/Videos/fast_boot.ogg",O_RDONLY);
-	//buff[read(clientfd,buff,BUFSIZ)] = '\0';
-
-	sprintf(buff, "HTTP/1.1 206 Partial Content\r\nContent-Range: bytes 0-1024/1915873\r\nTransfer-Encoding: chunked\r\nServer: Myserver\r\n\r\n%x\r\n", cnt);
-
-	count1 = strlen(buff);
-	memcpy(buff + count1,buff2,cnt);
-	memcpy(buff + count1 + cnt,"\r\n0\r\n\r\n",strlen("\r\n0\r\n\r\n"));
-
-	cnt = send(clientfd,buff,count1 + cnt + strlen("\r\n0\r\n\r\n"),0);
-	printf("Data sent to the client %d bytes: %s",cnt,strerror(errno));
-
-	// totalcnt = 1025;
-	while(1){
-
-		cnt = read(clientfd,buff,BUFSIZ);
-		if(cnt <= 0)
-			break;
-
-		buff[cnt] = '\0';
-		printf("Request recieved as \n%s\n",buff); 
-		ptr = strstr(buff,"bytes=") + strlen("bytes=");
-
-		strcnt = 0;
-		while(*ptr!='-'){
-			strtemp[strcnt] = *ptr; 
-			strcnt++;
-			ptr++;
-		} 
-		strtemp[strcnt] = '\0';
-
-		printf("strcnt = %s\n",strtemp);
-
-		lseek(filefd,atoi(strtemp),0);
-		cnt = read(filefd,buff2,6000);
-
-		sprintf(buff,"HTTP/1.1 206 Partial Content\r\nContent-Type: video/ogg\r\nDate: Mon, 28 Feb 2011 10:38:19 GMT\r\nContent-Range: bytes %d-%d/1915873\r\nTransfer-Encoding: chunked\r\nServer: Myserver\r\n\r\n%x\r\n",atoi(strtemp),atoi(strtemp) + cnt - 1,cnt);
-
-		count1 = strlen(buff);
-		memcpy(buff + count1,buff2,cnt);
-		memcpy(buff + count1 + cnt,"\r\n0\r\n\r\n",strlen("\r\n0\r\n\r\n"));
-
-		cnt = send(clientfd,buff,count1 + cnt + strlen("\r\n0\r\n\r\n"),0);
-		printf("Data sent to the client %d bytes: %s\n",cnt,strerror(errno));
-
-	}
-	close(clientfd);
-	close(socketfd);
-	*/
+{
 	return 0;
 }
 
