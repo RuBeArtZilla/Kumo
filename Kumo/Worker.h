@@ -73,6 +73,10 @@ typedef std::vector<std::wstring>::iterator WSVECTOR_ITERATOR;
 #define MESSAGE_DIRECTORY_REQUEST_ID 3
 #define MESSAGE_FILE_REQUEST_ID 4
 
+#define HTTP_ANSWER_200 "HTTP/1.1 200 OK\r\n"
+#define HTTP_ANSWER_206 "HTTP/1.1 206 Partial Content\r\n"
+
+
 LISTWSMSGPRM ParseInputMessage(wstring msg);
 int CheckMessage(LISTWSMSGPRM * input);
 std::wstring wsFindParameter(LISTWSMSGPRM * source, std::wstring find);
